@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#faf9f7">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<title>體組成紀錄</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="體組成">
+<style>
+  /* layout: single column of cards, summary → trends → table */
+  :root {
+    --bg: #faf9f7; --panel: #fff; --line: #e4e0d9;
+    --fg: #1f1d1a; --muted: #6f6a62;
+    --a1: #3f6f5c; --a2: #a8683c; --warn: #8a5a1a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #171614; --panel: #211f1c; --line: #35312c;
+      --fg: #f0ece6; --muted: #9b958c;
+      --a1: #7fb79e; --a2: #d99b6a; --warn: #e0b070;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #171614; --panel: #211f1c; --line: #35312c;
+    --fg: #f0ece6; --muted: #9b958c;
+    --a1: #7fb79e; --a2: #d99b6a; --warn: #e0b070;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Segoe UI", sans-serif;
+    font-size: 15px; line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap {
+    max-width: 70rem; margin-inline: auto;
+    padding-block: 1.25rem 4rem;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  h1 { font-size: 1.35rem; margin: 0 0 .25rem; text-wrap: balance; }
+  h2 { font-size: 1.02rem; font-weight: 500; margin: 1.75rem 0 .7rem; }
+  .lede { color: var(--muted); margin: 0 0 1.25rem; font-size: .88rem; max-width: 40em; }
+  .sync { font-size: .76rem; color: var(--muted); margin: -.9rem 0 1rem; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 1rem; min-width: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr)); gap: .7rem; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: .7rem; }
+  .ct { font-size: .76rem; color: var(--muted); margin: 0 0 .15rem; }
+  .big { font-size: 1.65rem; font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .unit { font-size: .76rem; color: var(--muted); margin-left: .2em; }
+  .net { font-size: .76rem; color: var(--muted); margin-top: .2rem; font-variant-numeric: tabular-nums; }
+  button {
+    font: inherit; font-weight: 500; border-radius: 9px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--fg);
+    padding: .5rem .9rem; cursor: pointer; -webkit-appearance: none;
+  }
+  button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--a1); outline-offset: 1px; }
+  button.primary { background: var(--a1); border-color: var(--a1); color: var(--bg); }
+  button:disabled { opacity: .45; }
+  .row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+  .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)); gap: .55rem; }
+  .fields label { display: block; font-size: .73rem; color: var(--muted); margin-bottom: .1rem; }
+  .fields input {
+    font: inherit; width: 100%; font-variant-numeric: tabular-nums;
+    padding: .45rem .5rem; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--fg); -webkit-appearance: none;
+  }
+  .chart-t { font-size: .9rem; font-weight: 500; margin: 0; }
+  .chart-n { font-size: .76rem; color: var(--muted); margin: 0 0 .45rem; }
+  .plot { min-height: 190px; }
+  .plot svg { display: block; width: 100%; height: auto; }
+  .scroller { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; font-size: .8rem; font-variant-numeric: tabular-nums; }
+  th, td { padding: .33rem .5rem; text-align: right; white-space: nowrap; }
+  th { position: sticky; top: 0; background: var(--panel); color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--line); }
+  th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: var(--panel); }
+  tbody tr { border-bottom: 1px solid var(--line); }
+  td.d { color: var(--muted); }
+  td.act { text-align: center; }
+  td.act button { padding: .08rem .4rem; font-size: .72rem; color: var(--muted); }
+  td.act button.armed { color: var(--warn); border-color: var(--warn); }
+  .note { color: var(--muted); font-size: .8rem; }
+  .note p { margin: 0 0 .4rem; }
+  .note p:last-child { margin: 0; }
+  .msg { font-size: .83rem; color: var(--muted); min-height: 1.4em; margin-top: .6rem; }
+  .msg.bad { color: var(--warn); }
+  .hide { display: none !important; }
+  textarea {
+    font: inherit; font-size: .78rem; width: 100%; min-height: 9rem;
+    border-radius: 9px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--fg); padding: .5rem;
+  }
+</style>
+
+<div class="wrap">
+  <h1>體組成紀錄</h1>
+  <p class="lede">起伏多半來自水分與量測條件，只有同條件、間隔夠久的兩點才比得出真實變化。</p>
+  <p class="sync" id="sync">讀取中…</p>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:.8rem">
+      <button class="primary" id="newBtn">新增一筆</button>
+      <button id="dataBtn">匯出／匯入</button>
+    </div>
+
+    <div id="form" class="hide">
+      <div class="fields" id="fields"></div>
+      <div class="row" style="margin-top:.9rem">
+        <button class="primary" id="save">存檔</button>
+        <button id="cancel">取消</button>
+      </div>
+    </div>
+
+    <div id="dataPane" class="hide">
+      <p class="note" style="margin-bottom:.5rem">下面是全部資料的 CSV。要備份就整段複製走；要匯入就貼上後按「匯入」（同日期會覆蓋）。</p>
+      <textarea id="csvBox" spellcheck="false"></textarea>
+      <div class="row" style="margin-top:.6rem">
+        <button id="selectAll">複製</button>
+        <button id="importBtn">匯入</button>
+        <button id="dataClose">關閉</button>
+      </div>
+    </div>
+
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <h2>目前</h2>
+  <div class="grid" id="cards"></div>
+
+  <h2>趨勢</h2>
+  <div class="grid2" id="charts"></div>
+
+  <h2>每次量測</h2>
+  <div class="card" style="padding-top:.5rem">
+    <div class="scroller"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+  </div>
+
+  <div class="card note" style="margin-top:1.1rem">
+    <p>「±」是跟上一次量測的差，刻意不上紅綠色。單次之間的差多半落在雜訊裡，標成好壞會誤導。</p>
+    <p>這類體脂計的日間波動約 ±0.5 公斤，體脂率誤差約 ±3–5%。脂肪重量是扣掉其他成分後的剩餘值，所以水分一變，它就跟著變。</p>
+    <p>要看真實進度，拿條件相同、間隔兩週以上的兩點比，例如低點對低點。</p>
+    <p>沒登入時，資料只存在這支手機的瀏覽器裡。清除瀏覽資料會一起清掉，記得偶爾用「匯出」備份一份。</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var CACHE = "bodylog.cache.v1";
+  var COLL = "records";
+
+  var COLS = [
+    { k: "date",      label: "日期",       type: "date" },
+    { k: "weight",    label: "體重",       unit: "公斤", dp: 1, hero: true },
+    { k: "bodyfat",   label: "體脂率",     unit: "%",    dp: 1, hero: true },
+    { k: "fat_kg",    label: "脂肪重量",   unit: "公斤", dp: 1, hero: true },
+    { k: "sm_kg",     label: "骨骼肌重量", unit: "公斤", dp: 1, hero: true },
+    { k: "bmi",       label: "BMI",        unit: "",     dp: 1 },
+    { k: "sm_pct",    label: "骨骼肌率",   unit: "%",    dp: 1 },
+    { k: "muscle_kg", label: "肌肉重量",   unit: "公斤", dp: 1 },
+    { k: "water_pct", label: "水分比例",   unit: "%",    dp: 1 },
+    { k: "water_kg",  label: "水含量",     unit: "公斤", dp: 1 },
+    { k: "visceral",  label: "內臟脂肪",   unit: "",     dp: 1 },
+    { k: "bmr",       label: "基礎代謝",   unit: "kcal", dp: 0 },
+    { k: "waist",     label: "腰圍",       unit: "公分", dp: 1 },
+    { k: "thigh",     label: "大腿圍",     unit: "公分", dp: 1 },
+    { k: "squat",     label: "深蹲",       unit: "公斤", dp: 1 },
+    { k: "hipthrust", label: "臀推",       unit: "公斤", dp: 1 }
+  ];
+  var DELTAS = ["weight", "bodyfat", "fat_kg", "sm_kg"];
+  var CHARTS = [
+    { k: "weight",  t: "體重",       n: "公斤", c: 0 },
+    { k: "bodyfat", t: "體脂率",     n: "百分比", c: 1 },
+    { k: "fat_kg",  t: "脂肪重量",   n: "公斤", c: 0 },
+    { k: "sm_kg",   t: "骨骼肌重量", n: "公斤", c: 1 },
+    { k: "squat",   t: "深蹲重量",   n: "公斤（不受水分影響）", c: 0 },
+    { k: "waist",   t: "腰圍",       n: "公分", c: 1 }
+  ];
+
+  var rows = [];
+  var db = null;          // cloud store, null when unavailable
+  var el = function (id) { return document.getElementById(id); };
+
+  /* ---------- storage ---------- */
+
+  function readCache() {
+    try {
+      var parsed = JSON.parse(window.localStorage.getItem(CACHE) || "null");
+      if (Array.isArray(parsed)) { rows = parsed; sortRows(); }
+    } catch (e) { /* no cache */ }
+  }
+  function writeCache() {
+    try { window.localStorage.setItem(CACHE, JSON.stringify(rows)); } catch (e) { /* ignore */ }
+  }
+  function sortRows() {
+    rows.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  }
+
+  function clean(rec) {
+    var o = {};
+    COLS.forEach(function (c) { o[c.k] = rec[c.k] === undefined ? null : rec[c.k]; });
+    return o;
+  }
+
+  // Write one record (cloud when available, else local only).
+  function putRecord(rec) {
+    rows = rows.filter(function (r) { return r.date !== rec.date; });
+    rows.push(rec);
+    sortRows(); writeCache();
+    if (!db) return Promise.resolve();
+    return db.collection(COLL).doc(rec.date).set(clean(rec));
+  }
+  function removeRecord(date) {
+    rows = rows.filter(function (r) { return r.date !== date; });
+    writeCache();
+    if (!db) return Promise.resolve();
+    return db.collection(COLL).doc(date).delete();
+  }
+
+  function setSync(t) { el("sync").textContent = t; }
+  function say(m, bad) {
+    var n = el("msg");
+    n.textContent = m || "";
+    n.className = "msg" + (bad ? " bad" : "");
+  }
+  function failSay(e) {
+    var code = e && e.code;
+    say(code === "quota_exceeded" ? "雲端空間已滿，請刪掉一些舊資料。" : "雲端存檔失敗，資料先留在這台裝置，請稍後再試。", true);
+  }
+
+  // Used only when there is no cloud store and this browser has nothing saved yet.
+  var SEED = [
+    ["2026-09-12",58.7,26.7,15.7,22.6,20.8,38.5,39.9,50.2,29.4,3.0,1281],
+    ["2026-09-20",59.6,27.5,16.4,22.8,21.1,38.2,40.1,49.8,29.7,3.0,1290],
+    ["2026-09-28",60.9,28.5,17.3,23.0,21.6,37.7,40.4,49.4,30.1,3.5,1303],
+    ["2026-09-30",60.3,28.0,16.9,22.9,21.4,37.9,40.2,49.6,29.9,3.5,1297],
+    ["2026-10-02",59.8,27.6,16.5,22.8,21.2,38.1,40.1,49.8,29.8,3.5,1292],
+    ["2026-10-03",59.8,27.6,16.5,22.8,21.2,38.1,40.1,49.8,29.8,3.5,1292],
+    ["2026-10-06",59.3,27.2,16.1,22.7,21.0,38.3,40.0,50.0,29.6,3.0,1287],
+    ["2026-10-07",58.8,26.8,15.8,22.6,20.8,38.5,39.9,50.1,29.5,3.0,1282],
+    ["2026-10-13",58.8,26.8,15.8,22.6,20.8,38.5,39.9,50.1,29.5,3.0,1282],
+    ["2026-10-15",59.3,27.2,16.1,22.7,21.0,38.3,40.0,50.0,29.6,3.0,1287],
+    ["2026-10-20",60.5,28.2,17.0,22.9,21.4,37.9,40.3,49.6,30.0,3.5,1299],
+    ["2026-10-22",59.4,27.3,16.2,22.7,21.0,38.3,40.1,49.9,29.7,3.0,1288],
+    ["2026-10-26",60.1,27.9,16.7,22.8,21.3,38.0,40.2,49.7,29.9,3.5,1295]
+  ];
+  var SEED_ORDER = ["date","weight","bodyfat","fat_kg","sm_kg","bmi","sm_pct","muscle_kg","water_pct","water_kg","visceral","bmr"];
+
+  function localOnly(text) {
+    if (!rows.length) {
+      rows = SEED.map(function (a) {
+        var o = {};
+        COLS.forEach(function (c) { o[c.k] = null; });
+        SEED_ORDER.forEach(function (k, i) { o[k] = a[i]; });
+        return o;
+      });
+      sortRows(); writeCache(); render();
+    }
+    setSync(text);
+  }
+
+  function connect() {
+    if (!window.claude || !window.claude.use) { localOnly("資料存在這支手機的瀏覽器裡"); return; }
+    window.claude.use("db").then(function (d) {
+      if (!d) { localOnly("資料存在這支手機的瀏覽器裡，記得偶爾匯出備份"); return; }
+      db = d;
+      db.collection(COLL).onSnapshot(function (snap) {
+        rows = snap.docs.map(function (doc) {
+          var o = doc.data() || {};
+          var r = {};
+          COLS.forEach(function (c) { r[c.k] = o[c.k] === undefined ? null : o[c.k]; });
+          r.date = r.date || doc.id;
+          return r;
+        });
+        sortRows(); writeCache(); render();
+        setSync(snap.metadata.fromCache ? "同步中…" : "已同步到雲端，共 " + rows.length + " 筆");
+      }, function () {
+        setSync("雲端連線中斷，顯示的是這台裝置上次的資料");
+      });
+    }, function () { localOnly("資料存在這支手機的瀏覽器裡，記得偶爾匯出備份"); });
+  }
+
+  /* ---------- formatting ---------- */
+
+  function fmt(col, v) {
+    if (v === null || v === undefined || v === "") return "—";
+    var n = Number(v);
+    if (isNaN(n)) return "—";
+    return n.toFixed(col.dp === 0 ? 0 : 1);
+  }
+  function signed(v) {
+    if (v === null || v === undefined) return "—";
+    var s = v.toFixed(1);
+    return v > 0 ? "+" + s : s.replace("-", "−");
+  }
+  function shortDate(iso) {
+    var p = String(iso).split("-");
+    return p.length === 3 ? Number(p[1]) + "/" + Number(p[2]) : iso;
+  }
+  function dayNum(iso) {
+    var p = String(iso).split("-");
+    return Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2])) / 86400000;
+  }
+  function today() {
+    var d = new Date();
+    var z = function (n) { return (n < 10 ? "0" : "") + n; };
+    return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate());
+  }
+
+  /* ---------- form ---------- */
+
+  function openForm(rec) {
+    var box = el("fields");
+    box.textContent = "";
+    COLS.forEach(function (c) {
+      var w = document.createElement("div");
+      var l = document.createElement("label");
+      l.textContent = c.label + (c.unit ? "（" + c.unit + "）" : "");
+      l.setAttribute("for", "f-" + c.k);
+      var i = document.createElement("input");
+      i.id = "f-" + c.k;
+      if (c.type === "date") {
+        i.type = "date";
+        i.value = (rec && rec.date) || today();
+      } else {
+        i.type = "number";
+        i.step = c.dp === 0 ? "1" : "0.1";
+        i.inputMode = "decimal";
+        var v = rec ? rec[c.k] : null;
+        i.value = (v === null || v === undefined || v === "") ? "" : String(v);
+      }
+      w.appendChild(l); w.appendChild(i); box.appendChild(w);
+    });
+    el("dataPane").classList.add("hide");
+    el("form").classList.remove("hide");
+    say("");
+  }
+
+  el("newBtn").addEventListener("click", function () { openForm(null); });
+  el("cancel").addEventListener("click", function () { el("form").classList.add("hide"); });
+
+  el("save").addEventListener("click", function () {
+    var date = el("f-date").value;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { say("日期格式不對。", true); return; }
+    var rec = { date: date };
+    var any = false;
+    COLS.forEach(function (c) {
+      if (c.k === "date") return;
+      var raw = el("f-" + c.k).value;
+      if (raw === "") { rec[c.k] = null; return; }
+      var n = Number(raw);
+      rec[c.k] = isNaN(n) ? null : n;
+      if (!isNaN(n)) any = true;
+    });
+    if (!any) { say("至少要填一個數值。", true); return; }
+    el("form").classList.add("hide");
+    render();
+    say("已存入 " + date + "。");
+    putRecord(rec).catch(failSay);
+  });
+
+  /* ---------- csv in / out ---------- */
+
+  function toCsv() {
+    var head = COLS.map(function (c) { return c.k; }).join(",");
+    var body = rows.map(function (r) {
+      return COLS.map(function (c) {
+        var v = r[c.k];
+        return (v === null || v === undefined) ? "" : String(v);
+      }).join(",");
+    }).join("\n");
+    return head + "\n" + body;
+  }
+
+  el("dataBtn").addEventListener("click", function () {
+    el("form").classList.add("hide");
+    el("csvBox").value = toCsv();
+    el("dataPane").classList.remove("hide");
+    say("");
+  });
+  el("dataClose").addEventListener("click", function () { el("dataPane").classList.add("hide"); });
+  el("selectAll").addEventListener("click", function () {
+    var t = el("csvBox");
+    var fallback = function () { t.focus(); t.setSelectionRange(0, t.value.length); say("已全選，請手動複製。"); };
+    try {
+      navigator.clipboard.writeText(t.value).then(function () { say("已複製。"); }, fallback);
+    } catch (e) { fallback(); }
+  });
+
+  el("importBtn").addEventListener("click", function () {
+    var text = el("csvBox").value.trim();
+    if (!text) { say("沒有東西可以匯入。", true); return; }
+    var lines = text.split(/\r?\n/).filter(function (l) { return l.trim() !== ""; });
+    if (lines.length < 2) { say("至少要有標題列和一列資料。", true); return; }
+    var head = lines[0].split(",").map(function (s) { return s.trim(); });
+    var di = head.indexOf("date");
+    if (di < 0) { say("標題列裡找不到 date 欄。", true); return; }
+    var recs = [];
+    lines.slice(1).forEach(function (line) {
+      var cells = line.split(",");
+      var date = (cells[di] || "").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+      var rec = { date: date };
+      COLS.forEach(function (c) {
+        if (c.k === "date") return;
+        var ci = head.indexOf(c.k);
+        if (ci < 0) { rec[c.k] = null; return; }
+        var raw = (cells[ci] || "").trim();
+        var n = Number(raw);
+        rec[c.k] = (raw === "" || isNaN(n)) ? null : n;
+      });
+      recs.push(rec);
+    });
+    if (!recs.length) { say("沒有讀到有效的資料列。", true); return; }
+    say("匯入中…");
+    // one write at a time
+    recs.reduce(function (p, r) { return p.then(function () { return putRecord(r); }); }, Promise.resolve())
+      .then(function () { render(); say("匯入了 " + recs.length + " 筆。"); }, failSay);
+  });
+
+  /* ---------- charts (no libraries) ---------- */
+
+  var SVGNS = "http://www.w3.org/2000/svg";
+  function mk(tag, attrs) {
+    var n = document.createElementNS(SVGNS, tag);
+    for (var k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  function niceTicks(lo, hi, count) {
+    var span = hi - lo;
+    if (!(span > 0)) return [lo];
+    var step = Math.pow(10, Math.floor(Math.log(span / count) / Math.LN10));
+    var err = (span / count) / step;
+    if (err >= 7.5) step *= 10; else if (err >= 3.5) step *= 5; else if (err >= 1.5) step *= 2;
+    var out = [], t = Math.ceil(lo / step) * step;
+    for (; t <= hi + step * 1e-9; t += step) out.push(Math.round(t / step) * step);
+    return out;
+  }
+
+  function drawChart(box, field, ci) {
+    box.textContent = "";
+    var pts = rows.filter(function (r) {
+      return r[field] !== null && r[field] !== undefined && r[field] !== "" && !isNaN(Number(r[field]));
+    }).map(function (r) { return { x: dayNum(r.date), v: Number(r[field]), iso: r.date }; });
+
+    if (pts.length === 0) {
+      var p = document.createElement("p");
+      p.className = "note";
+      p.style.margin = "2.5rem 0";
+      p.style.textAlign = "center";
+      p.textContent = "還沒有這一項的資料";
+      box.appendChild(p);
+      return;
+    }
+
+    var W = 340, H = 190;
+    var svg = mk("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
+
+    var vs = pts.map(function (p) { return p.v; });
+    var lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs);
+    var pad = Math.max((hi - lo) * 0.25, 0.4);
+    lo -= pad; hi += pad;
+    var ticks = niceTicks(lo, hi, 4);
+    var dp = ticks.some(function (t) { return Math.abs(t - Math.round(t)) > 1e-9; }) ? 1 : 0;
+    var labW = 0;
+    ticks.forEach(function (t) { labW = Math.max(labW, String(t.toFixed(dp)).length); });
+
+    var m = { top: 12, right: 12, bottom: 24, left: labW * 7 + 12 };
+    var iw = W - m.left - m.right, ih = H - m.top - m.bottom;
+    var Y = function (v) { return m.top + ih - (v - lo) / (hi - lo) * ih; };
+
+    var xlo = pts[0].x, xhi = pts[pts.length - 1].x;
+    if (xhi === xlo) { xlo -= 1; xhi += 1; }
+    var X = function (x) { return m.left + (x - xlo) / (xhi - xlo) * iw; };
+
+    ticks.forEach(function (t) {
+      svg.appendChild(mk("line", {
+        x1: m.left, x2: m.left + iw, y1: Y(t), y2: Y(t),
+        stroke: "var(--line)", "stroke-width": 1
+      }));
+      var lab = mk("text", {
+        x: m.left - 6, y: Y(t) + 4, "text-anchor": "end",
+        "font-size": 11, fill: "var(--muted)"
+      });
+      lab.textContent = t.toFixed(dp);
+      svg.appendChild(lab);
+    });
+
+    svg.appendChild(mk("line", {
+      x1: m.left, x2: m.left + iw, y1: m.top + ih, y2: m.top + ih,
+      stroke: "var(--line)", "stroke-width": 1
+    }));
+
+    var want = Math.min(4, pts.length);
+    var seen = {};
+    for (var i = 0; i < want; i++) {
+      var idx = want === 1 ? 0 : Math.round(i * (pts.length - 1) / (want - 1));
+      if (seen[idx]) continue;
+      seen[idx] = true;
+      var tl = mk("text", {
+        x: X(pts[idx].x), y: H - 7, "text-anchor": "middle",
+        "font-size": 11, fill: "var(--muted)"
+      });
+      tl.textContent = shortDate(pts[idx].iso);
+      svg.appendChild(tl);
+    }
+
+    var col = ci === 0 ? "var(--a1)" : "var(--a2)";
+    if (pts.length > 1) {
+      var d = pts.map(function (p, j) { return (j ? "L" : "M") + X(p.x).toFixed(1) + " " + Y(p.v).toFixed(1); }).join(" ");
+      svg.appendChild(mk("path", {
+        d: d, fill: "none", stroke: col, "stroke-width": 2,
+        "stroke-linecap": "round", "stroke-linejoin": "round"
+      }));
+    }
+    pts.forEach(function (p, j) {
+      var c = mk("circle", { cx: X(p.x), cy: Y(p.v), r: j === pts.length - 1 ? 4.5 : 3, fill: col });
+      var ttl = mk("title");
+      ttl.textContent = shortDate(p.iso) + "  " + p.v.toFixed(1);
+      c.appendChild(ttl);
+      svg.appendChild(c);
+    });
+
+    box.appendChild(svg);
+  }
+
+  /* ---------- render ---------- */
+
+  function deltaMap() {
+    var out = {};
+    rows.forEach(function (r, i) {
+      var p = i === 0 ? null : rows[i - 1], d = {};
+      DELTAS.forEach(function (k) {
+        var a = r[k], b = p ? p[k] : null;
+        d[k] = (p && a !== null && a !== undefined && b !== null && b !== undefined)
+          ? Math.round((Number(a) - Number(b)) * 10) / 10 : null;
+      });
+      out[r.date] = d;
+    });
+    return out;
+  }
+
+  function renderCards() {
+    var box = el("cards");
+    box.textContent = "";
+    if (!rows.length) {
+      var c = document.createElement("div");
+      c.className = "card note";
+      c.textContent = "還沒有資料。按「新增一筆」開始，或用「匯出／匯入」貼上之前的 CSV。";
+      box.appendChild(c);
+      return;
+    }
+    var last = rows[rows.length - 1], first = rows[0];
+    COLS.filter(function (c) { return c.hero; }).forEach(function (c) {
+      var card = document.createElement("div"); card.className = "card";
+      var t = document.createElement("p"); t.className = "ct"; t.textContent = c.label + "（" + shortDate(last.date) + "）";
+      var v = document.createElement("div");
+      var b = document.createElement("span"); b.className = "big"; b.textContent = fmt(c, last[c.k]);
+      var u = document.createElement("span"); u.className = "unit"; u.textContent = c.unit;
+      v.appendChild(b); v.appendChild(u);
+      var n = document.createElement("div"); n.className = "net";
+      var ok = rows.length > 1 && last[c.k] != null && first[c.k] != null;
+      n.textContent = "期間淨變化 " + (ok ? signed(Math.round((Number(last[c.k]) - Number(first[c.k])) * 10) / 10) : "—");
+      card.appendChild(t); card.appendChild(v); card.appendChild(n);
+      box.appendChild(card);
+    });
+  }
+
+  function renderCharts() {
+    var box = el("charts");
+    box.textContent = "";
+    CHARTS.forEach(function (c) {
+      var card = document.createElement("div"); card.className = "card";
+      var t = document.createElement("p"); t.className = "chart-t"; t.textContent = c.t;
+      var n = document.createElement("p"); n.className = "chart-n"; n.textContent = c.n;
+      var p = document.createElement("div"); p.className = "plot";
+      card.appendChild(t); card.appendChild(n); card.appendChild(p);
+      box.appendChild(card);
+      drawChart(p, c.k, c.c);
+    });
+  }
+
+  function renderTable() {
+    var dm = deltaMap();
+    var thead = el("thead"), tbody = el("tbody");
+    thead.textContent = ""; tbody.textContent = "";
+    var hr = document.createElement("tr");
+    COLS.forEach(function (c) {
+      var th = document.createElement("th"); th.textContent = c.label; hr.appendChild(th);
+      if (DELTAS.indexOf(c.k) >= 0) {
+        var th2 = document.createElement("th"); th2.textContent = "±"; hr.appendChild(th2);
+      }
+    });
+    hr.appendChild(document.createElement("th"));
+    thead.appendChild(hr);
+
+    rows.slice().reverse().forEach(function (r) {
+      var tr = document.createElement("tr");
+      COLS.forEach(function (c) {
+        var td = document.createElement("td");
+        td.textContent = c.k === "date" ? shortDate(r.date) : fmt(c, r[c.k]);
+        tr.appendChild(td);
+        if (DELTAS.indexOf(c.k) >= 0) {
+          var td2 = document.createElement("td");
+          td2.className = "d";
+          td2.textContent = signed(dm[r.date] ? dm[r.date][c.k] : null);
+          tr.appendChild(td2);
+        }
+      });
+      var ta = document.createElement("td"); ta.className = "act";
+      var eb = document.createElement("button");
+      eb.textContent = "改";
+      eb.addEventListener("click", function () {
+        openForm(r);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+      var db2 = document.createElement("button");
+      db2.textContent = "刪";
+      db2.style.marginLeft = ".25rem";
+      var timer = null;
+      db2.addEventListener("click", function () {
+        if (!db2.classList.contains("armed")) {
+          db2.classList.add("armed");
+          db2.textContent = "確定刪？";
+          timer = setTimeout(function () { db2.classList.remove("armed"); db2.textContent = "刪"; }, 3000);
+          return;
+        }
+        clearTimeout(timer);
+        removeRecord(r.date).catch(failSay);
+        render();
+        say("已刪除 " + r.date + "。");
+      });
+      ta.appendChild(eb); ta.appendChild(db2);
+      tr.appendChild(ta);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function render() { renderCards(); renderCharts(); renderTable(); }
+
+  readCache();
+  render();
+  connect();
+})();
+</script>
+
+</html>

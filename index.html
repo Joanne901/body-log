@@ -93,6 +93,37 @@
   .msg { font-size: .83rem; color: var(--muted); min-height: 1.4em; margin-top: .6rem; }
   .msg.bad { color: var(--warn); }
   .hide { display: none !important; }
+  .tabs { display: flex; gap: 3px; padding: 3px; margin: 0 0 1.1rem; max-width: 22rem; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); }
+  .tabs button { flex: 1; border: 0; background: transparent; padding: .42rem .5rem; color: var(--muted); }
+  .tabs button[aria-selected="true"] { background: var(--a1); color: var(--bg); }
+  .fields select {
+    font: inherit; width: 100%; padding: .45rem .5rem; border-radius: 9px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--fg);
+  }
+  .sets { display: grid; gap: .4rem; margin: .7rem 0 .2rem; }
+  .setrow { display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto minmax(0, 1fr) auto; gap: .4rem; align-items: center; font-size: .78rem; color: var(--muted); }
+  .setrow input {
+    font: inherit; font-size: .95rem; width: 100%; min-width: 0; font-variant-numeric: tabular-nums;
+    padding: .4rem .5rem; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--fg); -webkit-appearance: none;
+  }
+  .btn-s { padding: .22rem .6rem; font-size: .76rem; }
+  .ex-h { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+  .ex-name { font-size: 1rem; font-weight: 600; margin: 0; }
+  .ex-sub { font-size: .74rem; color: var(--muted); }
+  .tag { display: inline-block; font-size: .72rem; font-weight: 600; padding: 0 .5rem; border-radius: 99px; border: 1px solid currentColor; margin-right: .35rem; }
+  .tag.up { color: var(--a1); }
+  .tag.hold { color: var(--muted); }
+  .tag.down { color: var(--warn); }
+  .sug { margin: .55rem 0 .45rem; font-size: .88rem; }
+  .ex-last, .ex-meta { font-size: .78rem; color: var(--muted); font-variant-numeric: tabular-nums; margin: 0; }
+  .ex-last b { color: var(--fg); font-weight: 500; }
+  .ex-note { font-size: .78rem; color: var(--warn); margin: .4rem 0 0; }
+  .spark svg { display: block; width: 100%; height: auto; margin: .45rem 0 .2rem; }
+  .ex-foot { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .6rem; }
+  .ex-set { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; margin-top: .6rem; }
+  .week { display: flex; flex-wrap: wrap; gap: .3rem 1.4rem; font-size: .85rem; }
+  .week b { font-size: 1.25rem; font-weight: 500; font-variant-numeric: tabular-nums; margin-right: .15rem; }
   textarea {
     font: inherit; font-size: .78rem; width: 100%; min-height: 9rem;
     border-radius: 9px; border: 1px solid var(--line);
@@ -104,6 +135,13 @@
   <h1>體組成紀錄</h1>
   <p class="lede">起伏多半來自水分與量測條件，只有同條件、間隔夠久的兩點才比得出真實變化。</p>
   <p class="sync" id="sync">讀取中…</p>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tabBody" aria-selected="true">身體</button>
+    <button role="tab" id="tabTrain" aria-selected="false">重訓</button>
+  </nav>
+
+  <section id="paneBody">
 
   <div class="card">
     <div class="row" style="margin-bottom:.8rem">
@@ -147,8 +185,65 @@
     <p>「±」是跟上一次量測的差，刻意不上紅綠色。單次之間的差多半落在雜訊裡，標成好壞會誤導。</p>
     <p>這類體脂計的日間波動約 ±0.5 公斤，體脂率誤差約 ±3–5%。脂肪重量是扣掉其他成分後的剩餘值，所以水分一變，它就跟著變。</p>
     <p>要看真實進度，拿條件相同、間隔兩週以上的兩點比，例如低點對低點。</p>
-    <p>沒登入時，資料只存在這支手機的瀏覽器裡。清除瀏覽資料會一起清掉，記得偶爾用「匯出」備份一份。</p>
+    <p>資料只存在這支手機的瀏覽器裡。清除瀏覽資料會一起清掉，記得偶爾用「匯出」備份一份。</p>
   </div>
+  </section>
+
+  <section id="paneTrain" class="hide">
+    <div class="card">
+      <div class="row" style="margin-bottom:.8rem">
+        <button class="primary" id="trNew">記錄訓練</button>
+        <button id="trDataBtn">匯出／匯入</button>
+      </div>
+
+      <div id="trForm" class="hide">
+        <div class="fields">
+          <div><label for="tf-date">日期</label><input type="date" id="tf-date"></div>
+          <div><label for="tf-ex">動作</label><select id="tf-ex"></select></div>
+          <div id="tf-newwrap" class="hide"><label for="tf-newname">新動作名稱</label><input id="tf-newname" placeholder="例如：保加利亞分腿蹲"></div>
+        </div>
+        <p class="ex-sub" id="tf-hint" style="margin:.6rem 0 0"></p>
+        <div class="sets" id="tf-sets"></div>
+        <div class="row">
+          <button id="tf-add">加一組</button>
+        </div>
+        <div class="row" style="margin-top:.9rem">
+          <button class="primary" id="tf-save">存檔</button>
+          <button id="tf-cancel">取消</button>
+        </div>
+      </div>
+
+      <div id="trDataPane" class="hide">
+        <p class="note" style="margin-bottom:.5rem">一組一列：日期、動作、重量、次數。要備份就整段複製走；要匯入就貼上後按「匯入」（同一天同一個動作會覆蓋）。</p>
+        <textarea id="trCsv" spellcheck="false"></textarea>
+        <div class="row" style="margin-top:.6rem">
+          <button id="trCopy">複製</button>
+          <button id="trImport">匯入</button>
+          <button id="trDataClose">關閉</button>
+        </div>
+      </div>
+
+      <div class="msg" id="trMsg"></div>
+    </div>
+
+    <h2>近 7 天</h2>
+    <div class="card" id="trWeek"></div>
+
+    <h2>下次怎麼練</h2>
+    <div class="grid2" id="trCards"></div>
+    <p class="note" id="trUnused" style="margin:.7rem 0 0"></p>
+
+    <h2>訓練紀錄</h2>
+    <div class="card" style="padding-top:.5rem">
+      <div class="scroller"><table><thead><tr><th>日期</th><th>動作</th><th>每組（公斤×次）</th><th>估算最大</th><th></th></tr></thead><tbody id="trBody"></tbody></table></div>
+    </div>
+
+    <div class="card note" style="margin-top:1.1rem">
+      <p>建議用的是「雙進度法」：每個動作設一個次數範圍，例如 8–12 下。同一個重量每組都做到上限，下次就加重；還沒到就維持重量、多做幾下。</p>
+      <p>「估算最大」是用重量和次數推算的單次最大重量（Epley 公式），只拿來看趨勢。超過 15 下的組不列入計算。</p>
+      <p>每組做到還剩 1–2 下力氣就停，次數才記得準。體重和體脂每天都在晃，重量有沒有往上走，是看增肌進度更可靠的指標。</p>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -172,9 +267,7 @@
     { k: "visceral",  label: "內臟脂肪",   unit: "",     dp: 1 },
     { k: "bmr",       label: "基礎代謝",   unit: "kcal", dp: 0 },
     { k: "waist",     label: "腰圍",       unit: "公分", dp: 1 },
-    { k: "thigh",     label: "大腿圍",     unit: "公分", dp: 1 },
-    { k: "squat",     label: "深蹲",       unit: "公斤", dp: 1 },
-    { k: "hipthrust", label: "臀推",       unit: "公斤", dp: 1 }
+    { k: "thigh",     label: "大腿圍",     unit: "公分", dp: 1 }
   ];
   var DELTAS = ["weight", "bodyfat", "fat_kg", "sm_kg"];
   var CHARTS = [
@@ -182,7 +275,7 @@
     { k: "bodyfat", t: "體脂率",     n: "百分比", c: 1 },
     { k: "fat_kg",  t: "脂肪重量",   n: "公斤", c: 0 },
     { k: "sm_kg",   t: "骨骼肌重量", n: "公斤", c: 1 },
-    { k: "squat",   t: "深蹲重量",   n: "公斤（不受水分影響）", c: 0 },
+    { k: "water_pct", t: "水分比例", n: "百分比（其他數字跟著它晃）", c: 0 },
     { k: "waist",   t: "腰圍",       n: "公分", c: 1 }
   ];
 
@@ -650,6 +743,548 @@
   readCache();
   render();
   connect();
+})();
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var KEY = "bodylog.train.v1";
+  var BODY = "bodylog.cache.v1";
+  var TAB = "bodylog.tab";
+
+  // lo–hi: target rep range; inc: weight added once every set reaches hi
+  var DEFAULT_EX = [
+    { id: "squat",     name: "深蹲",         lo: 6,  hi: 10, inc: 2.5, bw: true },
+    { id: "hipthrust", name: "臀推",         lo: 8,  hi: 12, inc: 2.5, bw: true },
+    { id: "rdl",       name: "羅馬尼亞硬舉", lo: 8,  hi: 12, inc: 2.5, bw: true },
+    { id: "bench",     name: "臥推",         lo: 6,  hi: 10, inc: 1,   bw: true },
+    { id: "row",       name: "啞鈴划船",     lo: 8,  hi: 12, inc: 1 },
+    { id: "ohp",       name: "肩推",         lo: 8,  hi: 12, inc: 1 },
+    { id: "pulldown",  name: "滑輪下拉",     lo: 10, hi: 15, inc: 2.5 }
+  ];
+
+  var data = null;
+  var editing = null;     // session id being edited
+  var el = function (id) { return document.getElementById(id); };
+
+  /* ---------- storage ---------- */
+
+  function copy(o) { return JSON.parse(JSON.stringify(o)); }
+  function uid() { return "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  function bodyRows() {
+    try {
+      var r = JSON.parse(window.localStorage.getItem(BODY) || "null");
+      return Array.isArray(r) ? r : [];
+    } catch (e) { return []; }
+  }
+  function latestBodyWeight() {
+    var rs = bodyRows().filter(function (r) { return r.weight != null && !isNaN(Number(r.weight)); });
+    rs.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+    return rs.length ? Number(rs[rs.length - 1].weight) : null;
+  }
+
+  function load() {
+    var d = null;
+    try { d = JSON.parse(window.localStorage.getItem(KEY) || "null"); } catch (e) { d = null; }
+    if (!d || !Array.isArray(d.sessions)) d = { sessions: [] };
+    if (!Array.isArray(d.ex) || !d.ex.length) d.ex = DEFAULT_EX.map(copy);
+    data = d;
+    if (!data.migrated) {
+      // earlier versions stored one squat / hip-thrust number on the body record
+      bodyRows().forEach(function (r) {
+        ["squat", "hipthrust"].forEach(function (k) {
+          var v = Number(r[k]);
+          if (r[k] == null || r[k] === "" || isNaN(v) || v <= 0) return;
+          data.sessions.push({ id: uid(), date: r.date, ex: k, sets: [{ w: v, r: null }] });
+        });
+      });
+      data.migrated = true;
+      save();
+    }
+  }
+  function save() {
+    try { window.localStorage.setItem(KEY, JSON.stringify(data)); }
+    catch (e) { say("存檔失敗，瀏覽器可能不允許在這個模式下儲存（例如無痕視窗）。", true); }
+  }
+
+  function say(m, bad) {
+    var n = el("trMsg");
+    n.textContent = m || "";
+    n.className = "msg" + (bad ? " bad" : "");
+  }
+
+  /* ---------- helpers ---------- */
+
+  function kg(v) { return String(Math.round(v * 100) / 100); }
+  function shortDate(iso) {
+    var p = String(iso).split("-");
+    return p.length === 3 ? Number(p[1]) + "/" + Number(p[2]) : iso;
+  }
+  function dayNum(iso) {
+    var p = String(iso).split("-");
+    return Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2])) / 86400000;
+  }
+  function today() {
+    var d = new Date();
+    var z = function (n) { return (n < 10 ? "0" : "") + n; };
+    return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate());
+  }
+  function exById(id) {
+    for (var i = 0; i < data.ex.length; i++) if (data.ex[i].id === id) return data.ex[i];
+    return null;
+  }
+  function byDate(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.id < b.id ? -1 : 1); }
+  function sessionsOf(id) { return data.sessions.filter(function (s) { return s.ex === id; }).sort(byDate); }
+  function topWeight(s) { return Math.max.apply(null, s.sets.map(function (x) { return x.w; })); }
+
+  // Epley; sets above 15 reps say little about max strength
+  function e1rm(set) {
+    if (set.r == null || set.r < 1 || set.r > 15) return null;
+    return set.r === 1 ? set.w : set.w * (1 + set.r / 30);
+  }
+  function sessE1(s) {
+    var best = null;
+    s.sets.forEach(function (x) { var v = e1rm(x); if (v != null && (best == null || v > best)) best = v; });
+    return best;
+  }
+  function setsText(s) {
+    return s.sets.map(function (x) { return kg(x.w) + "×" + (x.r == null ? "?" : x.r); }).join("、");
+  }
+
+  /* ---------- coaching ---------- */
+
+  function suggest(ex) {
+    var ss = sessionsOf(ex.id);
+    if (!ss.length) {
+      return { kind: "hold", tag: "第一次", w: null,
+        text: "選一個做 " + ex.hi + " 下時還剩 2 下力氣的重量，做 3 組，記下每組次數。" };
+    }
+    var last = ss[ss.length - 1];
+    var top = topWeight(last);
+    var work = last.sets.filter(function (x) { return x.w === top && x.r != null; });
+    if (!work.length) {
+      return { kind: "hold", tag: "補記次數", w: top,
+        text: "上次只記了重量。這次用 " + kg(top) + " 公斤，記下每組做了幾下，才算得出下一步。" };
+    }
+    var allTop = work.every(function (x) { return x.r >= ex.hi; });
+    var low = work.some(function (x) { return x.r < ex.lo; });
+    if (allTop) {
+      var up = top + ex.inc;
+      return { kind: "up", tag: "加重", w: up,
+        text: "上次 " + kg(top) + " 公斤每組都做到 " + ex.hi + " 下。加到 " + kg(up) + " 公斤，每組做到 " + ex.lo + " 下以上就算成功。" };
+    }
+    if (low) {
+      var prev = ss.length > 1 ? ss[ss.length - 2] : null;
+      var prevLow = prev && topWeight(prev) === top && prev.sets.some(function (x) {
+        return x.w === top && x.r != null && x.r < ex.lo;
+      });
+      if (prevLow) {
+        var down = Math.max(ex.inc, Math.floor(top * 0.9 / ex.inc) * ex.inc);
+        return { kind: "down", tag: "退一步", w: down,
+          text: "連兩次在 " + kg(top) + " 公斤有組數做不到 " + ex.lo + " 下。先退到 " + kg(down) + " 公斤，把次數做滿再加回來。" };
+      }
+      return { kind: "hold", tag: "維持", w: top,
+        text: "上次有組數不到 " + ex.lo + " 下。維持 " + kg(top) + " 公斤，先讓每組都到 " + ex.lo + " 下。" };
+    }
+    var total = work.reduce(function (a, x) { return a + x.r; }, 0);
+    return { kind: "hold", tag: "加次數", w: top,
+      text: "維持 " + kg(top) + " 公斤。上次這個重量共 " + total + " 下，這次目標 " + (total + 1) + "–" + (total + 2) + " 下，從次數最少的那組補。" };
+  }
+
+  function notes(ex) {
+    var ss = sessionsOf(ex.id), out = [];
+    if (!ss.length) return out;
+    var gap = dayNum(today()) - dayNum(ss[ss.length - 1].date);
+    if (gap > 10) out.push("距離上次已經 " + gap + " 天。第一組先用建議重量的九成確認狀態。");
+    var withE = ss.filter(function (s) { return sessE1(s) != null; });
+    if (withE.length >= 4) {
+      var recent = withE.slice(-3), before = withE.slice(0, -3);
+      var bestBefore = Math.max.apply(null, before.map(sessE1));
+      var bestRecent = Math.max.apply(null, recent.map(sessE1));
+      var span = dayNum(recent[2].date) - dayNum(recent[0].date);
+      if (bestRecent <= bestBefore && span >= 10) {
+        out.push("最近三次的估算最大重量都沒超過之前最好的一次。先檢查睡眠和蛋白質有沒有吃夠；如果一直覺得累，安排一週減量：重量減一成、組數減半。");
+      }
+    }
+    return out;
+  }
+
+  /* ---------- sparkline ---------- */
+
+  var SVGNS = "http://www.w3.org/2000/svg";
+  function mk(tag, attrs) {
+    var n = document.createElementNS(SVGNS, tag);
+    for (var k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  function spark(box, ss) {
+    var pts = ss.map(function (s) { return { x: dayNum(s.date), v: sessE1(s), iso: s.date }; })
+      .filter(function (p) { return p.v != null; });
+    if (!pts.length) return;
+    var W = 300, H = 64, m = 6;
+    var lo = Math.min.apply(null, pts.map(function (p) { return p.v; }));
+    var hi = Math.max.apply(null, pts.map(function (p) { return p.v; }));
+    if (hi - lo < 1) { lo -= 0.5; hi += 0.5; }
+    var xlo = pts[0].x, xhi = pts[pts.length - 1].x;
+    if (xhi === xlo) { xlo -= 1; xhi += 1; }
+    var X = function (x) { return m + (x - xlo) / (xhi - xlo) * (W - 2 * m); };
+    var Y = function (v) { return H - m - (v - lo) / (hi - lo) * (H - 2 * m); };
+    var svg = mk("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "估算最大重量趨勢" });
+    svg.appendChild(mk("line", { x1: m, x2: W - m, y1: H - m, y2: H - m, stroke: "var(--line)", "stroke-width": 1 }));
+    if (pts.length > 1) {
+      svg.appendChild(mk("path", {
+        d: pts.map(function (p, j) { return (j ? "L" : "M") + X(p.x).toFixed(1) + " " + Y(p.v).toFixed(1); }).join(" "),
+        fill: "none", stroke: "var(--a2)", "stroke-width": 2, "stroke-linecap": "round", "stroke-linejoin": "round"
+      }));
+    }
+    pts.forEach(function (p, j) {
+      var c = mk("circle", { cx: X(p.x), cy: Y(p.v), r: j === pts.length - 1 ? 4 : 2.5, fill: "var(--a2)" });
+      var t = mk("title"); t.textContent = shortDate(p.iso) + "  " + p.v.toFixed(1) + " 公斤";
+      c.appendChild(t); svg.appendChild(c);
+    });
+    box.appendChild(svg);
+  }
+
+  /* ---------- form ---------- */
+
+  function fillExSelect(sel) {
+    var s = el("tf-ex");
+    s.textContent = "";
+    data.ex.forEach(function (ex) {
+      var o = document.createElement("option"); o.value = ex.id; o.textContent = ex.name; s.appendChild(o);
+    });
+    var n = document.createElement("option"); n.value = "__new"; n.textContent = "＋ 新增動作…"; s.appendChild(n);
+    s.value = sel || data.ex[0].id;
+  }
+
+  function addSetRow(w, r, ph) {
+    var box = el("tf-sets");
+    var i = box.children.length + 1;
+    var row = document.createElement("div"); row.className = "setrow";
+    var lab = document.createElement("span"); lab.textContent = "第 " + i + " 組";
+    var wi = document.createElement("input");
+    wi.type = "number"; wi.inputMode = "decimal"; wi.step = "0.5"; wi.placeholder = "公斤";
+    wi.id = "tf-w-" + i; wi.setAttribute("aria-label", "第 " + i + " 組重量");
+    wi.value = w == null ? "" : String(w);
+    var x = document.createElement("span"); x.textContent = "×";
+    var ri = document.createElement("input");
+    ri.type = "number"; ri.inputMode = "numeric"; ri.step = "1"; ri.placeholder = ph || "次";
+    ri.id = "tf-r-" + i; ri.setAttribute("aria-label", "第 " + i + " 組次數");
+    ri.value = r == null ? "" : String(r);
+    var rm = document.createElement("button"); rm.className = "btn-s"; rm.textContent = "移除";
+    rm.addEventListener("click", function () {
+      row.parentNode.removeChild(row);
+      Array.prototype.forEach.call(box.children, function (c, j) { c.firstChild.textContent = "第 " + (j + 1) + " 組"; });
+    });
+    row.appendChild(lab); row.appendChild(wi); row.appendChild(x); row.appendChild(ri); row.appendChild(rm);
+    box.appendChild(row);
+  }
+
+  function prefill() {
+    var id = el("tf-ex").value;
+    el("tf-newwrap").classList.toggle("hide", id !== "__new");
+    el("tf-sets").textContent = "";
+    var ex = exById(id);
+    if (!ex) { el("tf-hint").textContent = "新動作預設 8–12 下、每次加 2.5 公斤，存檔後可以在卡片上改。"; addSetRow(null, null); addSetRow(null, null); addSetRow(null, null); return; }
+    var sg = suggest(ex), ss = sessionsOf(ex.id);
+    var n = ss.length ? Math.max(1, ss[ss.length - 1].sets.length) : 3;
+    el("tf-hint").textContent = "建議：" + sg.text;
+    for (var i = 0; i < n; i++) addSetRow(sg.w, null, ex.lo + "–" + ex.hi);
+  }
+
+  function openForm(sess, exId) {
+    editing = sess ? sess.id : null;
+    el("tf-date").value = sess ? sess.date : today();
+    fillExSelect(sess ? sess.ex : exId);
+    if (sess) {
+      el("tf-newwrap").classList.add("hide");
+      el("tf-sets").textContent = "";
+      el("tf-hint").textContent = "修改 " + shortDate(sess.date) + " 的紀錄。";
+      sess.sets.forEach(function (x) { addSetRow(x.w, x.r); });
+    } else {
+      prefill();
+    }
+    el("trDataPane").classList.add("hide");
+    el("trForm").classList.remove("hide");
+    say("");
+  }
+
+  el("trNew").addEventListener("click", function () { openForm(null); });
+  el("tf-ex").addEventListener("change", function () { if (!editing) prefill(); else el("tf-newwrap").classList.toggle("hide", el("tf-ex").value !== "__new"); });
+  el("tf-add").addEventListener("click", function () {
+    var rows = el("tf-sets").children, w = null, r = null;
+    if (rows.length) {
+      var lr = rows[rows.length - 1].querySelectorAll("input");
+      w = lr[0].value === "" ? null : lr[0].value;
+      r = lr[1].value === "" ? null : lr[1].value;
+    }
+    addSetRow(w, r);
+  });
+  el("tf-cancel").addEventListener("click", function () { el("trForm").classList.add("hide"); editing = null; });
+
+  el("tf-save").addEventListener("click", function () {
+    var date = el("tf-date").value;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { say("日期格式不對。", true); return; }
+    var exId = el("tf-ex").value;
+    if (exId === "__new") {
+      var name = el("tf-newname").value.trim();
+      if (!name) { say("請填新動作的名稱。", true); return; }
+      var found = data.ex.filter(function (e) { return e.name === name; })[0];
+      if (found) exId = found.id;
+      else { exId = "x" + Date.now().toString(36); data.ex.push({ id: exId, name: name, lo: 8, hi: 12, inc: 2.5 }); }
+    }
+    var sets = [];
+    Array.prototype.forEach.call(el("tf-sets").children, function (row) {
+      var ins = row.querySelectorAll("input");
+      var w = Number(ins[0].value), r = ins[1].value === "" ? null : Math.round(Number(ins[1].value));
+      if (ins[0].value === "" || isNaN(w) || w < 0) return;
+      sets.push({ w: w, r: (r == null || isNaN(r) || r < 0) ? null : r });
+    });
+    if (!sets.length) { say("至少要填一組的重量。", true); return; }
+    var sess = { id: editing || uid(), date: date, ex: exId, sets: sets };
+    data.sessions = data.sessions.filter(function (s) { return s.id !== sess.id; });
+    data.sessions.push(sess);
+    save();
+    editing = null;
+    el("trForm").classList.add("hide");
+    render();
+    var sg = suggest(exById(exId));
+    say("已存入 " + shortDate(date) + " " + exById(exId).name + "。下次：" + sg.tag + (sg.w != null ? " " + kg(sg.w) + " 公斤" : "") + "。");
+  });
+
+  /* ---------- csv in / out ---------- */
+
+  function toCsv() {
+    var lines = ["date,exercise,weight,reps"];
+    data.sessions.slice().sort(byDate).forEach(function (s) {
+      var ex = exById(s.ex);
+      s.sets.forEach(function (x) {
+        lines.push([s.date, ex ? ex.name : s.ex, kg(x.w), x.r == null ? "" : x.r].join(","));
+      });
+    });
+    return lines.join("\n");
+  }
+
+  el("trDataBtn").addEventListener("click", function () {
+    el("trForm").classList.add("hide");
+    el("trCsv").value = toCsv();
+    el("trDataPane").classList.remove("hide");
+    say("");
+  });
+  el("trDataClose").addEventListener("click", function () { el("trDataPane").classList.add("hide"); });
+  el("trCopy").addEventListener("click", function () {
+    var t = el("trCsv");
+    var fallback = function () { t.focus(); t.setSelectionRange(0, t.value.length); say("已全選，請手動複製。"); };
+    try { navigator.clipboard.writeText(t.value).then(function () { say("已複製。"); }, fallback); }
+    catch (e) { fallback(); }
+  });
+
+  el("trImport").addEventListener("click", function () {
+    var lines = el("trCsv").value.trim().split(/\r?\n/).filter(function (l) { return l.trim() !== ""; });
+    if (lines.length < 2) { say("至少要有標題列和一列資料。", true); return; }
+    var head = lines[0].split(",").map(function (s) { return s.trim(); });
+    var di = head.indexOf("date"), ei = head.indexOf("exercise"), wi = head.indexOf("weight"), ri = head.indexOf("reps");
+    if (di < 0 || ei < 0 || wi < 0) { say("標題列要有 date、exercise、weight 三欄。", true); return; }
+    var groups = {}, order = [];
+    lines.slice(1).forEach(function (line) {
+      var c = line.split(",");
+      var date = (c[di] || "").trim(), name = (c[ei] || "").trim(), w = Number((c[wi] || "").trim());
+      var rr = ri < 0 ? "" : (c[ri] || "").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !name || isNaN(w)) return;
+      var ex = data.ex.filter(function (e) { return e.name === name; })[0];
+      if (!ex) { ex = { id: "x" + Date.now().toString(36) + data.ex.length, name: name, lo: 8, hi: 12, inc: 2.5 }; data.ex.push(ex); }
+      var k = date + "|" + ex.id;
+      if (!groups[k]) { groups[k] = { id: uid(), date: date, ex: ex.id, sets: [] }; order.push(k); }
+      groups[k].sets.push({ w: w, r: rr === "" || isNaN(Number(rr)) ? null : Math.round(Number(rr)) });
+    });
+    if (!order.length) { say("沒有讀到有效的資料列。", true); return; }
+    order.forEach(function (k) {
+      var g = groups[k];
+      data.sessions = data.sessions.filter(function (s) { return !(s.date === g.date && s.ex === g.ex); });
+      data.sessions.push(g);
+    });
+    save(); render();
+    say("匯入了 " + order.length + " 次訓練。");
+  });
+
+  /* ---------- render ---------- */
+
+  function renderWeek() {
+    var box = el("trWeek");
+    box.textContent = "";
+    var from = dayNum(today()) - 6;
+    var recent = data.sessions.filter(function (s) { return dayNum(s.date) >= from; });
+    var days = {}, sets = 0, perEx = {};
+    recent.forEach(function (s) {
+      days[s.date] = true; sets += s.sets.length;
+      perEx[s.ex] = (perEx[s.ex] || 0) + s.sets.length;
+    });
+    var w = document.createElement("div"); w.className = "week";
+    [[Object.keys(days).length, "天有練"], [sets, "組"], [Object.keys(perEx).length, "個動作"]].forEach(function (p) {
+      var d = document.createElement("div");
+      var b = document.createElement("b"); b.textContent = p[0];
+      d.appendChild(b); d.appendChild(document.createTextNode(p[1]));
+      w.appendChild(d);
+    });
+    box.appendChild(w);
+    var n = document.createElement("p"); n.className = "ex-meta"; n.style.marginTop = ".45rem";
+    var parts = Object.keys(perEx).map(function (id) { var e = exById(id); return (e ? e.name : id) + " " + perEx[id] + " 組"; });
+    n.textContent = parts.length
+      ? parts.join("、") + "。同一個部位一週練到 10 組左右是常見的增肌起點，分在 2 天以上做效果較好。"
+      : "這 7 天還沒有紀錄。按「記錄訓練」開始。";
+    box.appendChild(n);
+  }
+
+  function renderCards() {
+    var box = el("trCards");
+    box.textContent = "";
+    var bw = latestBodyWeight();
+    var used = data.ex.filter(function (e) { return sessionsOf(e.id).length; });
+    used.sort(function (a, b) {
+      var la = sessionsOf(a.id).pop().date, lb = sessionsOf(b.id).pop().date;
+      return la < lb ? 1 : la > lb ? -1 : 0;
+    });
+    if (!used.length) {
+      var c = document.createElement("div"); c.className = "card note";
+      c.textContent = "還沒有訓練紀錄。記下第一次之後，這裡會告訴你下次每個動作要用多重、做幾下。";
+      box.appendChild(c);
+    }
+    used.forEach(function (ex) {
+      var ss = sessionsOf(ex.id), last = ss[ss.length - 1], sg = suggest(ex);
+      var card = document.createElement("div"); card.className = "card";
+
+      var h = document.createElement("div"); h.className = "ex-h";
+      var nm = document.createElement("p"); nm.className = "ex-name"; nm.textContent = ex.name;
+      var sub = document.createElement("span"); sub.className = "ex-sub";
+      sub.textContent = ex.lo + "–" + ex.hi + " 下・每次加 " + kg(ex.inc) + " 公斤";
+      h.appendChild(nm); h.appendChild(sub); card.appendChild(h);
+
+      var sug = document.createElement("p"); sug.className = "sug";
+      var tg = document.createElement("span"); tg.className = "tag " + sg.kind; tg.textContent = sg.tag;
+      sug.appendChild(tg); sug.appendChild(document.createTextNode(sg.text));
+      card.appendChild(sug);
+
+      var lp = document.createElement("p"); lp.className = "ex-last";
+      lp.appendChild(document.createTextNode("上次 " + shortDate(last.date) + "："));
+      var b = document.createElement("b"); b.textContent = setsText(last); lp.appendChild(b);
+      card.appendChild(lp);
+
+      var sp = document.createElement("div"); sp.className = "spark"; card.appendChild(sp);
+      spark(sp, ss);
+
+      var es = ss.map(sessE1).filter(function (v) { return v != null; });
+      if (es.length) {
+        var cur = es[es.length - 1], best = Math.max.apply(null, es);
+        var meta = document.createElement("p"); meta.className = "ex-meta";
+        var t = "估算最大 " + cur.toFixed(1) + " 公斤（最好 " + best.toFixed(1) + "）";
+        if (ex.bw && bw) t += "・約體重的 " + (cur / bw).toFixed(2) + " 倍";
+        meta.textContent = t;
+        card.appendChild(meta);
+      }
+
+      notes(ex).forEach(function (s) {
+        var p = document.createElement("p"); p.className = "ex-note"; p.textContent = s; card.appendChild(p);
+      });
+
+      var foot = document.createElement("div"); foot.className = "ex-foot";
+      var go = document.createElement("button"); go.className = "btn-s"; go.textContent = "記錄這個動作";
+      go.addEventListener("click", function () { openForm(null, ex.id); window.scrollTo({ top: 0, behavior: "smooth" }); });
+      var st = document.createElement("button"); st.className = "btn-s"; st.textContent = "調整次數範圍";
+      foot.appendChild(go); foot.appendChild(st); card.appendChild(foot);
+
+      var set = document.createElement("div"); set.className = "hide";
+      var grid = document.createElement("div"); grid.className = "ex-set fields";
+      var inputs = {};
+      [["lo", "最少次數"], ["hi", "最多次數"], ["inc", "每次加（公斤）"]].forEach(function (f) {
+        var w = document.createElement("div");
+        var l = document.createElement("label"); l.textContent = f[1]; l.setAttribute("for", "ex-" + ex.id + "-" + f[0]);
+        var i = document.createElement("input"); i.type = "number"; i.inputMode = "decimal";
+        i.step = f[0] === "inc" ? "0.5" : "1"; i.id = "ex-" + ex.id + "-" + f[0]; i.value = ex[f[0]];
+        inputs[f[0]] = i;
+        w.appendChild(l); w.appendChild(i); grid.appendChild(w);
+      });
+      var sv = document.createElement("button"); sv.className = "btn-s"; sv.textContent = "套用"; sv.style.marginTop = ".5rem";
+      sv.addEventListener("click", function () {
+        var lo = Math.round(Number(inputs.lo.value)), hi = Math.round(Number(inputs.hi.value)), inc = Number(inputs.inc.value);
+        if (!(lo >= 1 && hi >= lo && hi <= 30 && inc > 0)) { say("次數範圍要是 1–30 之間、最少不大於最多，加重要大於 0。", true); return; }
+        ex.lo = lo; ex.hi = hi; ex.inc = inc;
+        save(); render(); say(ex.name + " 改成 " + lo + "–" + hi + " 下、每次加 " + kg(inc) + " 公斤。");
+      });
+      set.appendChild(grid); set.appendChild(sv); card.appendChild(set);
+      st.addEventListener("click", function () { set.classList.toggle("hide"); });
+
+      box.appendChild(card);
+    });
+
+    var unused = data.ex.filter(function (e) { return !sessionsOf(e.id).length; });
+    el("trUnused").textContent = unused.length
+      ? "還沒記錄過：" + unused.map(function (e) { return e.name; }).join("、") + "。從「記錄訓練」選動作就會出現在這裡。"
+      : "";
+  }
+
+  function renderTable() {
+    var tb = el("trBody");
+    tb.textContent = "";
+    var all = data.sessions.slice().sort(byDate).reverse();
+    if (!all.length) {
+      var tr0 = document.createElement("tr"); var td0 = document.createElement("td");
+      td0.colSpan = 5; td0.className = "note"; td0.textContent = "還沒有紀錄";
+      tr0.appendChild(td0); tb.appendChild(tr0);
+      return;
+    }
+    all.forEach(function (s) {
+      var ex = exById(s.ex), tr = document.createElement("tr");
+      var e = sessE1(s);
+      [shortDate(s.date), ex ? ex.name : s.ex, setsText(s), e == null ? "—" : e.toFixed(1)].forEach(function (v, i) {
+        var td = document.createElement("td"); td.textContent = v;
+        if (i === 1 || i === 2) td.style.textAlign = "left";
+        tr.appendChild(td);
+      });
+      var ta = document.createElement("td"); ta.className = "act";
+      var eb = document.createElement("button"); eb.textContent = "改";
+      eb.addEventListener("click", function () { openForm(s); window.scrollTo({ top: 0, behavior: "smooth" }); });
+      var db = document.createElement("button"); db.textContent = "刪"; db.style.marginLeft = ".25rem";
+      var timer = null;
+      db.addEventListener("click", function () {
+        if (!db.classList.contains("armed")) {
+          db.classList.add("armed"); db.textContent = "確定刪？";
+          timer = setTimeout(function () { db.classList.remove("armed"); db.textContent = "刪"; }, 3000);
+          return;
+        }
+        clearTimeout(timer);
+        data.sessions = data.sessions.filter(function (x) { return x.id !== s.id; });
+        save(); render(); say("已刪除 " + shortDate(s.date) + " " + (ex ? ex.name : "") + "。");
+      });
+      ta.appendChild(eb); ta.appendChild(db);
+      tr.appendChild(ta);
+      tb.appendChild(tr);
+    });
+  }
+
+  function render() { renderWeek(); renderCards(); renderTable(); }
+
+  /* ---------- tabs ---------- */
+
+  function showTab(name) {
+    var train = name === "train";
+    el("paneBody").classList.toggle("hide", train);
+    el("paneTrain").classList.toggle("hide", !train);
+    el("tabBody").setAttribute("aria-selected", train ? "false" : "true");
+    el("tabTrain").setAttribute("aria-selected", train ? "true" : "false");
+    if (train) render();   // body weight may have changed on the other tab
+    try { window.localStorage.setItem(TAB, name); } catch (e) { /* ignore */ }
+  }
+  el("tabBody").addEventListener("click", function () { showTab("body"); });
+  el("tabTrain").addEventListener("click", function () { showTab("train"); });
+
+  load();
+  render();
+  var startTab = "body";
+  try { startTab = window.localStorage.getItem(TAB) || "body"; } catch (e) { /* ignore */ }
+  showTab(startTab);
 })();
 </script>
 

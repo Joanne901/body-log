@@ -123,6 +123,19 @@
   .ex-foot { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .6rem; }
   .ex-set { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; margin-top: .6rem; }
   .week { display: flex; flex-wrap: wrap; gap: .3rem 1.4rem; font-size: .85rem; }
+  .update {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    display: flex; align-items: center; gap: .75rem;
+    padding-top: .8rem;
+    padding-bottom: calc(.8rem + env(safe-area-inset-bottom, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    background: var(--fg); color: var(--bg); font-size: .86rem;
+  }
+  .update p { margin: 0; flex: 1; min-width: 0; }
+  .update small { display: block; opacity: .75; font-size: .76rem; }
+  .update button { background: var(--a1); border-color: var(--a1); color: #fff; }
+  .update .later { background: transparent; border-color: transparent; color: var(--bg); padding-inline: .4rem; }
   .week b { font-size: 1.25rem; font-weight: 500; font-variant-numeric: tabular-nums; margin-right: .15rem; }
   textarea {
     font: inherit; font-size: .78rem; width: 100%; min-height: 9rem;
@@ -1285,6 +1298,49 @@
   var startTab = "body";
   try { startTab = window.localStorage.getItem(TAB) || "body"; } catch (e) { /* ignore */ }
   showTab(startTab);
+})();
+</script>
+
+<div class="update hide" id="update" role="status">
+  <p>有新版本<small id="updateNotes"></small></p>
+  <button id="updateGo">更新</button>
+  <button class="later" id="updateLater">稍後</button>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // Bump together with version.json on every release.
+  var APP_VERSION = "2026-10-29.2";
+  var dismissed = null;
+  var el = function (id) { return document.getElementById(id); };
+
+  function check() {
+    if (!window.fetch || location.protocol === "file:") return;
+    fetch("version.json?t=" + Date.now(), { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (v) {
+        if (!v || !v.v || v.v === APP_VERSION || v.v === dismissed) return;
+        el("updateNotes").textContent = v.notes || "";
+        el("update").dataset.v = v.v;
+        el("update").classList.remove("hide");
+      })
+      .catch(function () { /* offline: try again next time */ });
+  }
+
+  el("updateGo").addEventListener("click", function () {
+    el("updateGo").disabled = true;
+    // refresh the cached page first, home-screen apps hold on to it
+    fetch("./", { cache: "reload" }).then(function () {}, function () {}).then(function () { location.reload(); });
+  });
+  el("updateLater").addEventListener("click", function () {
+    dismissed = el("update").dataset.v;
+    el("update").classList.add("hide");
+  });
+
+  check();
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) check(); });
 })();
 </script>
 
